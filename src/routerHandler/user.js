@@ -2,11 +2,15 @@ const database = require('../common/database')
 const bcrypt = require('bcryptjs')
 const { v4: uuid } = require('uuid')
 const jwt = require('jsonwebtoken')
-const { secretKey, expiresIn } = require('../common/config')
+const { secretKey, expiresIn, loginDuration } = require('../common/config')
 const {
     redisSet,
+    redisSetTimeout,
     redisGet,
-    redisDelete
+    redisGetTimeout,
+    redisDelete,
+    redisSetDb,
+    redisResetDb
 } = require('../common/redis')
 
 exports.register = (req, res) => {
@@ -40,27 +44,36 @@ exports.login = (req, res) => {
                 const userInfo = result[0]
                 const compareResult = bcrypt.compareSync(password, userInfo.password)
                 if (compareResult) {
-                    const payload = { ...userInfo, password: '', avater: '', }
-                    const token = jwt.sign(payload, secretKey, { expiresIn })
+                    const existToken = await redisGet(userInfo.userId)
+                    let token = ''
+                    if (existToken) {
+                        token = existToken
+                    } else {
+                        const payload = { ...userInfo, password: '', avater: ''}
+                        token = jwt.sign(payload, secretKey, { expiresIn: expiresIn + 's' })
+                        await redisSet(userInfo.userId, token)
+                        await redisSetTimeout(userInfo.userId, loginDuration)
+                    }
                     //TODO apiFox会自动加上Bearer，接口测试使用该代码，与前端对接联调加上Bearer
                     res.commonResSend(0, '登录成功', { token })
                 } else {
-                    try {
-                        const replay = await redisSet('123', {aaa: 4546}, 60000)
-                        // const replay = await redisGet('123')
-                        // console.log(replay)
-                        res.commonResSend(1, '账号密码错误')
-                    } catch (error) {
-                        console.log(error)
-                        res.commonResSend(1, '账号密码错误')
-                    }
-                    
+                    res.commonResSend(1, '账号密码错误')
                 }
             } else {
                 res.commonResSend(1, '该用户不存在')
             }
         })
     }
+}
+
+exports.logout = async (req, res) => {
+    const userInfo = req.userInfo
+    await redisDelete(userInfo.userId)
+    res.commonResSend(0, '登出成功')
+}
+
+exports.test = async (req, res) => {
+    res.commonResSend(0, 'test success')
 }
 
 exports.resetPassword = (req, res) => {

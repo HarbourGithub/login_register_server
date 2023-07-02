@@ -7,13 +7,10 @@ const {
     redisSet,
     redisSetTimeout,
     redisGet,
-    redisGetTimeout,
-    redisDelete,
-    redisSetDb,
-    redisResetDb
+    redisDelete
 } = require('../common/redis')
 
-exports.register = (req, res) => {
+exports.register = (req, res) => { 
     const userInfo = req.body
     const selectSql = 'select * from users where userName=?'
     database.query(selectSql, [userInfo.userName], (err, result) => {
@@ -49,7 +46,7 @@ exports.login = (req, res) => {
                     if (existToken) {
                         token = existToken
                     } else {
-                        const payload = { ...userInfo, password: '', avater: ''}
+                        const payload = { ...userInfo, password: '', avater: '' }
                         token = jwt.sign(payload, secretKey, { expiresIn: expiresIn + 's' })
                         await redisSet(userInfo.userId, token)
                         await redisSetTimeout(userInfo.userId, loginDuration)
@@ -72,10 +69,11 @@ exports.logout = async (req, res) => {
     res.commonResSend(0, '登出成功')
 }
 
-exports.test = async (req, res) => {
-    res.commonResSend(0, 'test success')
-}
-
 exports.resetPassword = (req, res) => {
     res.send('resetPassword ok')
+}
+
+exports.test = async (req, res) => {
+    console.log(req.params.id)
+    res.commonResSend(0, 'test success')
 }

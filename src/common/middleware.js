@@ -1,15 +1,7 @@
 const Joi = require('joi')
 const { secretKey } = require('../common/config')
 const jwt = require('jsonwebtoken')
-const {
-    redisSet,
-    redisSetTimeout,
-    redisGet,
-    redisGetTimeout,
-    redisDelete,
-    redisSetDb,
-    redisResetDb
-} = require('../common/redis')
+const { redisGet } = require('../common/redis')
 
 exports.resSendMiddleware = (req, res, next) => {
     res.commonResSend = (status, message, data) => {

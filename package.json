@@ -18,6 +18,7 @@
     "jsonwebtoken": "^9.0.0",
     "mysql": "^2.18.1",
     "redis": "^4.6.7",
+    "svg-captcha": "^1.4.0",
     "uuid": "^9.0.0"
   }
 }

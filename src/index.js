@@ -17,7 +17,7 @@ app.use(expressjwt({
     secret: secretKey,
     algorithms: ["HS256"]
 }).unless({
-    path: ['/login', '/register', '/resetPassword', '/test']
+    path: ['/login', '/register', '/revisePassword', '/refreshCaptcha']
 }))
 app.use(analyzeToken)
 app.use(userRouter)

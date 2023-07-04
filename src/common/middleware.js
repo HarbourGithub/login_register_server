@@ -3,6 +3,8 @@ const { secretKey } = require('../common/config')
 const jwt = require('jsonwebtoken')
 const { redisGet } = require('../common/redis')
 
+// 全局中间件
+// 封装res.send方法
 exports.resSendMiddleware = (req, res, next) => {
     res.commonResSend = (status, message, data) => {
         res.send({
@@ -13,7 +15,7 @@ exports.resSendMiddleware = (req, res, next) => {
     }
     next()
 }
-
+// token解析方法
 exports.analyzeToken = async (req, res, next) => {
     const headerToken = req.headers['authorization']
     if (headerToken) {
@@ -30,7 +32,7 @@ exports.analyzeToken = async (req, res, next) => {
     }
     next()
 }
-
+// 全局错误中间件
 exports.handleError = (err, req, res, next) => {
     if (err.name === 'UnauthorizedError') {
         // JWT 认证失败
@@ -38,6 +40,8 @@ exports.handleError = (err, req, res, next) => {
     }
 }
 
+// 路由中间件
+// 验证注册表单
 exports.verifyRegister = (req, res, next) => {
     const userInfo = req.body
     const schema = Joi.object({

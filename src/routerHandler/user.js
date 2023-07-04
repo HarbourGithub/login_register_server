@@ -11,6 +11,7 @@ const {
 } = require('../common/redis')
 const { createCaptcha } = require('../common/utils')
 
+// 注册接口处理函数
 exports.register = (req, res) => {
     const userInfo = req.body
     const selectSql = 'select * from users where userName=?'
@@ -19,8 +20,11 @@ exports.register = (req, res) => {
         if (result.length > 0) {
             res.commonResSend(1, '用户名已存在')
         } else {
+            // 使用bcrypt加密密码
             userInfo.password = bcrypt.hashSync(userInfo.password, 10)
+            // 使用uuid生成唯一id
             userInfo.userId = uuid().replace(/-/g, '')
+            // 插入数据
             const insertSql = 'insert into users set ?'
             database.query(insertSql, userInfo, (err, result) => {
                 if (err) { return res.commonResSend(1, err.message) }
@@ -41,12 +45,14 @@ exports.login = (req, res) => {
             if (result.length > 0) {
                 const userInfo = result[0]
                 let failNumber = 0
+                // 获取当前用户是否输错过密码
                 const redisFailNumber = await redisGet(userName + 'failNumber')
                 if (redisFailNumber) failNumber = redisFailNumber
                 const redisCaptcha = await redisGet(userName + 'captcha')
+                // 密码输入错误超过五次，一小时内不允许再次尝试
                 if (failNumber === 5) {
                     return res.commonResSend(1, '密码输入错误超过五次，请一小时后再试')
-                } else if (failNumber >= 1 && failNumber < 5
+                } else if (failNumber >= 1 && failNumber < 5 // 验证码错误时生成新的验证码并返回
                     && (!captcha || !redisCaptcha || captcha.toLowerCase() !== redisCaptcha.toLowerCase())) {
                     const { text, data } = createCaptcha()
                     await redisSet(userName + 'captcha', text)
@@ -56,24 +62,30 @@ exports.login = (req, res) => {
                         failNumber
                     })
                 }
+                // 对比密码
                 const compareResult = bcrypt.compareSync(password, userInfo.password)
+                // 账号密码正确，登陆成功
                 if (compareResult) {
                     const existToken = await redisGet(userInfo.userId)
                     let token = ''
+                    // 存在有效token，返回该token
                     if (existToken) {
                         token = existToken
                     } else {
+                        // 生成token并存入redis
                         const payload = { ...userInfo, password: '', avater: '' }
                         token = jwt.sign(payload, secretKey, { expiresIn: expiresIn + 's' })
                         await redisSet(userInfo.userId, token)
                         await redisSetTimeout(userInfo.userId, loginDuration)
                     }
+                    // 登陆成功删除redis中的密码输入错误次数和验证码
                     await redisDelete(userName + 'failNumber')
                     await redisDelete(userName + 'captcha')
                     //TODO apiFox会自动加上Bearer，接口测试使用该代码，与前端对接联调加上Bearer
                     // res.commonResSend(0, '登录成功', { token: 'Bearer ' + token })
                     res.commonResSend(0, '登录成功', { token })
                 } else {
+                    // 密码输入错误，生成验证码返回客户端，redis储存验证码和失败次数，多次失败次数累加
                     const { text, data } = createCaptcha()
                     await redisSet(userName + 'failNumber', failNumber + 1)
                     await redisSetTimeout(userName + 'failNumber', 3600)
@@ -90,7 +102,7 @@ exports.login = (req, res) => {
         })
     }
 }
-
+// 刷新验证码
 exports.refreshCaptcha = async (req, res) => {
     const { userName } = req.body
     const { text, data } = createCaptcha()
@@ -100,7 +112,7 @@ exports.refreshCaptcha = async (req, res) => {
         captcha: data
     })
 }
-
+// 修改密码
 exports.revisePassword = (req, res) => {
     const { userName, password, newPassword, confirmPassword } = req.body
     if (!userName || !password) {
@@ -134,7 +146,7 @@ exports.revisePassword = (req, res) => {
         })
     }
 }
-
+// 退出登录
 exports.logout = async (req, res) => {
     const userInfo = req.userInfo
     await redisDelete(userInfo.userId)

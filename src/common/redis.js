@@ -1,7 +1,7 @@
 const redis = require('redis')
-
+// 创建redis客户端实例
 const redisClient = redis.createClient()
-
+// 连接redis
 redisClient.connect()
 
 // Redis 客户端监听连接事件

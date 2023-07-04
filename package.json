@@ -1,5 +1,5 @@
 {
-  "name": "floor_plan_server",
+  "name": "login_register_server",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.js",

@@ -11,7 +11,17 @@ const {
 } = require('../common/redis')
 const { createCaptcha } = require('../common/utils')
 
-// 注册接口处理函数
+/**
+ * 注册接口处理函数
+ * @param {
+ * userName: 必传 string,
+ * password: 必传 string,
+ * nickName: string,
+ * email: string,
+ * phoneNumber: string,
+ * avater: base64
+ * }
+ */
 exports.register = (req, res) => {
     const userInfo = req.body
     const selectSql = 'select * from users where userName=?'
@@ -33,7 +43,13 @@ exports.register = (req, res) => {
         }
     })
 }
-
+/**
+ * 登录接口处理函数
+ * @param {
+ * userName: 必传 string,
+ * password: 必传 string
+ * }
+ */
 exports.login = (req, res) => {
     const { userName, password, captcha } = req.body
     if (!userName || !password) {
@@ -102,7 +118,12 @@ exports.login = (req, res) => {
         })
     }
 }
-// 刷新验证码
+/**
+ * 刷新验证码处理函数
+ * @param {
+ * userName: 必传 string
+ * }
+ */
 exports.refreshCaptcha = async (req, res) => {
     const { userName } = req.body
     const { text, data } = createCaptcha()
@@ -112,7 +133,15 @@ exports.refreshCaptcha = async (req, res) => {
         captcha: data
     })
 }
-// 修改密码
+/**
+ * 修改密码处理函数
+ * @param {
+ * userName: 必传 string,
+ * password: 必传 string,
+ * newPassword: 必传 string,
+ * confirmPassword: 必传 string
+ * }
+ */
 exports.revisePassword = (req, res) => {
     const { userName, password, newPassword, confirmPassword } = req.body
     if (!userName || !password) {
